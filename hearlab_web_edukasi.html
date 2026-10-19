@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HearLab - Simulasi Perjalanan Suara</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        blue: { 100: '#dbeafe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 900: '#1e3a8a' },
+                        pink: { 100: '#fce7f3', 300: '#f9a8d4', 400: '#f472b6', 500: '#ec4899', 900: '#831843' },
+                        yellow: { 100: '#fef9c3', 300: '#fde047', 400: '#facc15', 500: '#eab308', 900: '#713f12' },
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* CSS Tambahan & Keyframe Animasi Simulasi */
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Gaya Neo-brutalism */
+        .neo-card {
+            border: 4px solid #1f2937;
+            border-radius: 1rem;
+            box-shadow: 6px 6px 0 0 #1f2937;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .neo-btn {
+            border: 4px solid #1f2937;
+            box-shadow: 4px 4px 0 0 #1f2937;
+            transition: all 0.1s;
+        }
+        .neo-btn:active {
+            box-shadow: 0px 0px 0 0 #1f2937;
+            transform: translate(4px, 4px);
+        }
+
+        /* Animasi SVG Simulasi */
+        @keyframes soundWaveMove {
+            0% { transform: translateX(0) scale(0.8); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(120px) scale(1.2); opacity: 0; }
+        }
+        .anim-wave { animation: soundWaveMove 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        @keyframes vibrateFast {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px) scale(1.02); }
+            75% { transform: translateX(2px) scale(0.98); }
+        }
+        .anim-vibrate { animation: vibrateFast 0.1s linear infinite; }
+        
+        @keyframes rotateOscicle {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(15deg); }
+        }
+        .anim-tuas { animation: rotateOscicle 0.2s linear infinite; transform-origin: 550px 210px; }
+        
+        @keyframes liquidPulse {
+            0%, 100% { fill: #c084fc; stroke-width: 35px; }
+            50% { fill: #d8b4fe; stroke-width: 45px; stroke: #e9d5ff; }
+        }
+        .anim-liquid { animation: liquidPulse 0.5s ease-in-out infinite; }
+        
+        @keyframes dashMove {
+            to { stroke-dashoffset: -20; }
+        }
+        .anim-nerve { animation: dashMove 0.5s linear infinite; stroke-dasharray: 15; stroke-dashoffset: 0; }
+        
+        @keyframes brainGlow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(236,72,153,0.5)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 30px rgba(236,72,153,1)); transform: scale(1.02); }
+        }
+        .anim-brain { animation: brainGlow 1s ease-in-out infinite; transform-origin: 900px 250px; }
+
+        /* Menyembunyikan tab yang tidak aktif */
+        .view-section { display: none; }
+        .view-section.active { display: flex; animation: fadeIn 0.4s ease-out forwards; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col md:flex-row overflow-hidden text-gray-800 selection:bg-pink-300">
+
+    <!-- SIDEBAR NAVIGASI -->
+    <nav class="w-full md:w-72 bg-white border-b-4 md:border-b-0 md:border-r-4 border-gray-900 p-6 flex flex-col gap-4 shadow-xl z-20 shrink-0 overflow-y-auto">
+        <div class="flex items-center gap-3 mb-4 md:mb-8">
+            <div class="bg-pink-400 p-2 rounded-xl border-2 border-gray-900 shadow-[2px_2px_0_0_#1f2937]">
+                <!-- Ikon Volume -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+            </div>
+            <h1 class="text-2xl font-black tracking-tight text-gray-900">HearLab</h1>
+        </div>
+
+        <div class="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+            <button class="nav-btn active flex items-center gap-3 p-3 rounded-xl font-bold bg-gray-900 text-white shadow-lg shrink-0" data-target="beranda">Beranda</button>
+            <button class="nav-btn flex items-center gap-3 p-3 rounded-xl font-bold bg-white text-gray-700 hover:bg-gray-100 border-2 border-transparent hover:border-gray-300 shrink-0" data-target="anatomi">Kenali Bagian</button>
+            <button class="nav-btn flex items-center gap-3 p-3 rounded-xl font-bold bg-white text-gray-700 hover:bg-gray-100 border-2 border-transparent hover:border-gray-300 shrink-0" data-target="simulasi">Simulasi</button>
+            <button class="nav-btn flex items-center gap-3 p-3 rounded-xl font-bold bg-white text-gray-700 hover:bg-gray-100 border-2 border-transparent hover:border-gray-300 shrink-0" data-target="fisika">Lab Fisika</button>
+            <button class="nav-btn flex items-center gap-3 p-3 rounded-xl font-bold bg-white text-gray-700 hover:bg-gray-100 border-2 border-transparent hover:border-gray-300 shrink-0" data-target="kuis">Kuis</button>
+        </div>
+    </nav>
+
+    <!-- AREA KONTEN UTAMA -->
+    <main class="flex-1 p-4 md:p-8 h-full overflow-y-auto bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNlMmU4ZjAiLz48L3N2Zz4=')]">
+        <div class="max-w-6xl mx-auto h-full">
+
+            <!-- 1. BERANDA -->
+            <section id="beranda" class="view-section active flex-col lg:flex-row items-center justify-between gap-12 h-full py-10">
+                <div class="flex-1 space-y-8">
+                    <div class="inline-block bg-yellow-200 text-yellow-900 font-bold px-4 py-2 rounded-full border-2 border-gray-900 shadow-[2px_2px_0_0_#1f2937]">
+                        Interaktif & Edukatif
+                    </div>
+                    <h2 class="text-5xl lg:text-7xl font-black text-gray-900 leading-tight">
+                        Simulasi Perjalanan <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-pink-500">Suara</span>
+                    </h2>
+                    <p class="text-xl text-gray-600 leading-relaxed font-medium">
+                        Pernahkah kamu bertanya bagaimana suara yang kamu dengar dapat dipahami oleh otak? Jelajahi perjalanan menakjubkan dari gelombang bunyi hingga menjadi persepsi di otak melalui simulasi interaktif ini.
+                    </p>
+                    <button class="btn-goto-anatomi neo-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-xl text-lg flex items-center gap-2">
+                        Mulai Belajar Sekarang 
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </button>
+                </div>
+                <div class="flex-1 relative w-full flex justify-center">
+                    <div class="w-full max-w-md aspect-square bg-white neo-card flex items-center justify-center p-8 rotate-[-2deg] hover:rotate-0 transition-transform duration-300 relative overflow-hidden bg-pink-50">
+                        <svg width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="#1f2937" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="relative z-10 hover:scale-110 transition-transform"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. ANATOMI (Kenali Bagian Telinga) -->
+            <section id="anatomi" class="view-section flex-col gap-8 h-full">
+                <div>
+                    <h2 class="text-4xl font-black text-gray-900">Kenali Bagian Telinga</h2>
+                    <p class="text-gray-600 mt-2 text-lg">Klik pada titik-titik (hotspot) di gambar anatomi untuk mempelajari fungsinya.</p>
+                </div>
+                <div class="flex flex-col lg:flex-row gap-8 flex-1">
+                    <!-- Area Gambar Interaktif -->
+                    <div class="neo-card bg-white relative lg:w-2/3 min-h-[400px] flex items-center justify-center overflow-hidden border-8">
+                        <svg viewBox="0 0 1000 500" class="w-full h-full drop-shadow-xl absolute inset-0 pointer-events-none">
+                            <ellipse cx="500" cy="250" rx="400" ry="200" fill="#f8fafc" filter="blur(40px)" />
+                            <!-- 1. Daun Telinga -->
+                            <path d="M 250,100 C 50,50 0,350 150,450 C 250,480 300,350 300,280 C 300,200 350,220 350,250" fill="#fce7f3" stroke="#fbcfe8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                            <!-- 2. Liang Telinga -->
+                            <path d="M 250,250 L 450,250" fill="none" stroke="#fce7f3" stroke-width="80" stroke-linecap="round"/>
+                            <!-- 3. Gendang Telinga -->
+                            <ellipse cx="450" cy="250" rx="12" ry="55" fill="#fcd34d" stroke="#fbbf24" stroke-width="4"/>
+                            <!-- 4. Tulang Pendengaran -->
+                            <path d="M 460,250 L 500,210 L 550,210 L 580,250" fill="none" stroke="#fef08a" stroke-width="20" stroke-linejoin="round" stroke-linecap="round"/>
+                            <circle cx="550" cy="210" r="18" fill="#facc15" />
+                            <!-- 5. Koklea -->
+                            <path d="M 590,250 C 590,120 730,120 730,250 C 730,340 620,340 620,250 C 620,190 680,190 680,250" fill="none" stroke="#d8b4fe" stroke-width="35" stroke-linecap="round"/>
+                            <circle cx="650" cy="250" r="15" fill="#c084fc" />
+                            <!-- 6. Saraf Pendengaran -->
+                            <path d="M 680,250 Q 750,250 850,250" fill="none" stroke="#fde047" stroke-width="25" stroke-linecap="round"/>
+                            <!-- 7. Otak -->
+                            <path d="M 820,250 C 820,80 1050,80 1050,250 C 1050,420 820,420 820,250 Z" fill="#fbcfe8" stroke="#f9a8d4" stroke-width="8" opacity="0.9"/>
+                        </svg>
+
+                        <!-- Hotspots -->
+                        <button class="hotspot absolute w-10 h-10 -ml-5 -mt-5 rounded-full border-4 border-gray-900 bg-blue-500 text-white font-bold hover:scale-110 transition-transform z-10" style="left: 15%; top: 45%;" data-id="0">1</button>
+                        <button class="hotspot absolute w-10 h-10 -ml-5 -mt-5 rounded-full border-4 border-gray-900 bg-blue-500 text-white font-bold hover:scale-110 transition-transform z-10" style="left: 35%; top: 50%;" data-id="1">2</button>
+                        <button class="hotspot absolute w-10 h-10 -ml-5 -mt-5 rounded-full border-4 border-gray-900 bg-blue-500 text-white font-bold hover:scale-110 transition-transform z-10" style="left: 45%; top: 50%;" data-id="2">3</button>
+                        <button class="hotspot absolute w-10 h-10 -ml-5 -mt-5 rounded-full border-4 border-gray-900 bg-blue-500 text-white font-bold hover:scale-110 transition-transform z-10" style="left: 55%; top: 42%;" data-id="3">4</button>
+                        <button class="hotspot absolute w-10 h-10 -ml-5 -mt-5 rounded-full border-4 border-gray-900 bg-blue-500 text-white font-bold hover:scale-110 transition-transform z-10" style="left: 65%; top: 55%;" data-id="4">5</button>
+                        <button class="hotspot absolute w-10 h-10 -ml-5 -mt-5 rounded-full border-4 border-gray-900 bg-blue-500 text-white font-bold hover:scale-110 transition-transform z-10" style="left: 80%; top: 50%;" data-id="5">6</button>
+                    </div>
+                    <!-- Panel Info Anatomi -->
+                    <div class="lg:w-1/3 flex flex-col">
+                        <div id="anatomi-info" class="neo-card bg-pink-100 h-full flex flex-col justify-center p-6 text-center opacity-80">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Pilih Bagian</h3>
+                            <p class="text-gray-700 font-medium">Ketuk salah satu angka pada gambar anatomi untuk melihat detail fungsinya.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. SIMULASI PERJALANAN SUARA -->
+            <section id="simulasi" class="view-section flex-col lg:flex-row gap-8 h-full">
+                <!-- Sidebar Tahapan -->
+                <div class="w-full lg:w-1/3 flex flex-col gap-4">
+                    <h2 class="text-3xl font-black text-gray-900 mb-2">Tahapan Simulasi</h2>
+                    <div id="sim-steps-container" class="flex flex-col gap-2 overflow-y-auto">
+                        <!-- Tahapan di-generate via JS -->
+                    </div>
+                    <div class="mt-4 p-4 bg-yellow-100 border-2 border-gray-900 rounded-xl text-sm text-gray-800 font-medium shadow-[2px_2px_0_0_#1f2937]">
+                        <strong>Aktifkan Suara!</strong> Setiap tahapan akan menghasilkan simulasi audio sintetis.
+                    </div>
+                </div>
+
+                <!-- Area Utama SVG & Penjelasan -->
+                <div class="w-full lg:w-2/3 flex flex-col gap-6">
+                    <!-- SVG Interaktif Simulasi -->
+                    <div class="neo-card bg-white relative flex flex-col overflow-hidden p-0 min-h-[350px]">
+                        <div id="sim-badge" class="absolute top-4 left-4 z-20 bg-white text-gray-900 font-bold text-sm px-4 py-2 rounded-full border-2 border-gray-900 shadow-sm">
+                            Tahap 1
+                        </div>
+                        
+                        <div class="relative w-full h-[300px] md:h-[400px] bg-slate-50 overflow-hidden z-10 flex items-center justify-center">
+                            <svg viewBox="0 0 1000 500" class="w-full h-full absolute inset-0 pointer-events-none">
+                                <!-- Base Anatomy (Semi transparent) -->
+                                <g opacity="0.5">
+                                    <path d="M 250,100 C 50,50 0,350 150,450 C 250,480 300,350 300,280 C 300,200 350,220 350,250" fill="#fce7f3" stroke="#fbcfe8" stroke-width="12"/>
+                                    <path d="M 250,250 L 450,250" fill="none" stroke="#fce7f3" stroke-width="80"/>
+                                    <ellipse cx="450" cy="250" rx="12" ry="55" fill="#fcd34d" stroke="#fbbf24" stroke-width="4"/>
+                                    <path d="M 460,250 L 500,210 L 550,210 L 580,250" fill="none" stroke="#fef08a" stroke-width="20"/>
+                                    <circle cx="550" cy="210" r="18" fill="#facc15" />
+                                    <path d="M 590,250 C 590,120 730,120 730,250 C 730,340 620,340 620,250 C 620,190 680,190 680,250" fill="none" stroke="#d8b4fe" stroke-width="35"/>
+                                    <circle cx="650" cy="250" r="15" fill="#c084fc" />
+                                    <path d="M 680,250 Q 750,250 850,250" fill="none" stroke="#fde047" stroke-width="25"/>
+                                    <path d="M 820,250 C 820,80 1050,80 1050,250 C 1050,420 820,420 820,250 Z" fill="#fbcfe8" stroke="#f9a8d4" stroke-width="8"/>
+                                </g>
+
+                                <!-- Layers Animasi berdasarkan Tahap -->
+                                <!-- Tahap 0: Gelombang -->
+                                <g id="layer-0" class="transition-opacity duration-300 opacity-0">
+                                    <rect x="50" y="150" width="300" height="200" fill="#fca5a5" opacity="0.3" rx="50" />
+                                    <g class="anim-wave" stroke="#3b82f6" fill="none" stroke-width="12" stroke-linecap="round">
+                                        <path d="M 30,180 Q 70,250 30,320" />
+                                        <path d="M 70,160 Q 120,250 70,340" />
+                                        <path d="M 110,140 Q 170,250 110,360" />
+                                    </g>
+                                </g>
+
+                                <!-- Tahap 1: Gendang Bergetar -->
+                                <g id="layer-1" class="transition-opacity duration-300 opacity-0">
+                                    <ellipse cx="450" cy="250" rx="15" ry="60" fill="#f59e0b" class="anim-vibrate" />
+                                    <text x="360" y="340" class="font-bold text-2xl fill-yellow-700">Gendang Telinga</text>
+                                </g>
+
+                                <!-- Tahap 2: Tulang Bergerak -->
+                                <g id="layer-2" class="transition-opacity duration-300 opacity-0">
+                                    <path d="M 460,250 L 500,210 L 550,210 L 580,250" fill="none" stroke="#eab308" stroke-width="25" stroke-linejoin="round" class="anim-tuas"/>
+                                    <circle cx="550" cy="210" r="22" fill="#d97706" class="anim-tuas"/>
+                                    <text x="480" y="150" class="font-bold text-2xl fill-yellow-700">Tulang Pendengaran</text>
+                                </g>
+
+                                <!-- Tahap 3: Koklea Merespons -->
+                                <g id="layer-3" class="transition-opacity duration-300 opacity-0">
+                                    <path d="M 590,250 C 590,120 730,120 730,250 C 730,340 620,340 620,250 C 620,190 680,190 680,250" fill="none" stroke="#a855f7" stroke-width="45" class="anim-liquid"/>
+                                    <text x="580" y="380" class="font-bold text-2xl fill-purple-800">Koklea (Cairan)</text>
+                                </g>
+
+                                <!-- Tahap 4: Sinyal Saraf -->
+                                <g id="layer-4" class="transition-opacity duration-300 opacity-0">
+                                    <path d="M 680,250 Q 750,250 850,250" fill="none" stroke="#eab308" stroke-width="35" class="anim-nerve"/>
+                                    <text x="700" y="180" class="font-bold text-2xl fill-yellow-600">Saraf Auditori</text>
+                                </g>
+
+                                <!-- Tahap 5: Otak Mengolah -->
+                                <g id="layer-5" class="transition-opacity duration-300 opacity-0">
+                                    <path d="M 820,250 C 820,80 1050,80 1050,250 C 1050,420 820,420 820,250 Z" fill="#ec4899" opacity="0.8" class="anim-brain"/>
+                                    <text x="880" y="250" class="font-black text-3xl fill-white">Korteks</text>
+                                </g>
+                            </svg>
+                        </div>
+
+                        <!-- Panel Kontrol -->
+                        <div class="w-full bg-gray-900 p-4 z-20 mt-auto flex items-center justify-between gap-4">
+                            <button id="btn-prev" class="text-white hover:text-blue-400 disabled:opacity-30 p-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg></button>
+                            
+                            <button id="btn-play" class="bg-blue-500 hover:bg-blue-400 text-white rounded-full p-4 shadow-[0_0_15px_rgba(59,130,246,0.6)] transform active:scale-95 transition-transform flex items-center justify-center">
+                                <svg id="icon-play" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                <svg id="icon-pause" class="hidden" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                            </button>
+
+                            <button id="btn-next" class="text-white hover:text-blue-400 disabled:opacity-30 p-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
+                            
+                            <div class="flex-1 ml-4 h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="sim-progress" class="bg-gradient-to-r from-blue-400 to-pink-500 h-full transition-all duration-500" style="width: 16.6%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Penjelasan Biolgi & Fisika -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-pink-50 border-4 border-gray-900 rounded-2xl p-5 shadow-[4px_4px_0_0_#1f2937]">
+                            <h4 class="font-bold text-gray-900 text-lg flex items-center gap-2 mb-2">Biologi</h4>
+                            <p id="desc-bio" class="text-gray-800 font-medium text-sm leading-relaxed"></p>
+                        </div>
+                        <div class="bg-blue-50 border-4 border-gray-900 rounded-2xl p-5 shadow-[4px_4px_0_0_#1f2937]">
+                            <h4 class="font-bold text-gray-900 text-lg flex items-center gap-2 mb-2">Fisika</h4>
+                            <p id="desc-fisika" class="text-gray-800 font-medium text-sm leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. LABORATORIUM FISIKA -->
+            <section id="fisika" class="view-section flex-col gap-8 h-full">
+                <div>
+                    <h2 class="text-4xl font-black text-gray-900">Laboratorium Fisika</h2>
+                    <p class="text-gray-600 mt-2 text-lg">Amati perubahan gelombang (visualisasi matematika bunyi) dengan mengatur frekuensi dan amplitudo.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Kontrol Slider -->
+                    <div class="neo-card bg-white flex flex-col gap-6 lg:col-span-1 p-6">
+                        <div>
+                            <label class="block font-bold text-gray-900 mb-2 flex justify-between">
+                                <span>Frekuensi (f)</span>
+                                <span id="val-freq" class="text-blue-600">5 Hz</span>
+                            </label>
+                            <input type="range" id="slider-freq" min="1" max="20" value="5" class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                            <p class="text-xs text-gray-500 mt-2">Makin tinggi frekuensi, gelombang makin rapat (nada makin tinggi).</p>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-900 mb-2 flex justify-between">
+                                <span>Amplitudo (A)</span>
+                                <span id="val-amp" class="text-pink-600">50</span>
+                            </label>
+                            <input type="range" id="slider-amp" min="10" max="120" value="50" class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                            <p class="text-xs text-gray-500 mt-2">Makin besar amplitudo, simpangan gelombang makin tinggi (suara makin keras).</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Visualisasi Canvas Gelombang -->
+                    <div class="lg:col-span-2 bg-gray-900 rounded-3xl border-8 border-gray-300 shadow-[8px_8px_0_0_#1f2937] overflow-hidden relative min-h-[300px] flex items-center justify-center p-4">
+                        <canvas id="waveCanvas" class="w-full h-full bg-gray-900 rounded-xl"></canvas>
+                    </div>
+                </div>
+
+                <!-- Rumus Info -->
+                <div class="neo-card bg-blue-100 p-6 flex flex-col md:flex-row gap-6 items-start">
+                    <div class="bg-white p-4 rounded-xl border-4 border-gray-900 shadow-[4px_4px_0_0_#1f2937] text-center flex-shrink-0">
+                        <span class="text-2xl font-black font-mono text-gray-900">v = f × λ</span>
+                    </div>
+                    <div class="flex-1 text-sm text-gray-800 font-medium grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <p><strong>v (Cepat rambat):</strong> Kecepatan gelombang bergerak di udara (±343 m/s).</p>
+                        <p><strong>f (Frekuensi):</strong> Jumlah getaran per detik (Hz). Menentukan pitch (tinggi/rendah nada).</p>
+                        <p><strong>λ (Lambda):</strong> Panjang gelombang. Jarak satu rapatan ke rapatan berikutnya.</p>
+                        <p><strong>Amplitudo (A):</strong> Simpangan maksimum getaran. Memengaruhi keras-lemahnya bunyi.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. KUIS & EVALUASI -->
+            <section id="kuis" class="view-section flex-col h-full max-w-3xl mx-auto gap-8 py-8 w-full">
+                <div id="kuis-progress-container">
+                    <h2 class="text-4xl font-black text-gray-900">Kuis Evaluasi</h2>
+                    <div class="w-full bg-gray-200 h-4 border-2 border-gray-900 rounded-full mt-6 overflow-hidden">
+                        <div id="kuis-bar" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p id="kuis-status" class="text-right mt-2 font-bold text-gray-500">Pertanyaan 1 dari 5</p>
+                </div>
+
+                <!-- Area Pertanyaan -->
+                <div id="kuis-area" class="neo-card bg-white p-6 md:p-8">
+                    <h3 id="question-text" class="text-2xl font-bold text-gray-900 mb-6 leading-relaxed"></h3>
+                    <div id="options-container" class="flex flex-col gap-4">
+                        <!-- Opsi digenerate via JS -->
+                    </div>
+                    
+                    <!-- Kotak Pembahasan (Tersembunyi Awalnya) -->
+                    <div id="feedback-box" class="hidden mt-8 p-6 bg-blue-50 rounded-xl border-4 border-gray-900">
+                        <h4 class="font-bold text-gray-900 mb-2">Pembahasan:</h4>
+                        <p id="feedback-text" class="text-gray-800"></p>
+                        <div class="mt-6 flex justify-end">
+                            <button id="btn-next-q" class="neo-btn bg-blue-500 text-white font-bold py-3 px-6 rounded-xl">Selanjutnya</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Area Hasil Kuis -->
+                <div id="kuis-result" class="hidden neo-card bg-yellow-100 p-12 text-center w-full">
+                    <h2 class="text-5xl font-black text-gray-900 mb-6">Hasil Kuis</h2>
+                    <div id="result-icon" class="text-7xl mb-6">🏆</div>
+                    <p class="text-2xl font-bold text-gray-700">Skor Kamu: <span id="final-score" class="text-4xl text-blue-600">0</span> / 5</p>
+                    <button id="btn-restart-q" class="neo-btn mt-8 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl inline-block">Ulangi Kuis</button>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- SCRIPT JAVASCRIPT -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // ==========================================
+            // 1. SISTEM NAVIGASI TAB
+            // ==========================================
+            const navBtns = document.querySelectorAll('.nav-btn');
+            const sections = document.querySelectorAll('.view-section');
+
+            function switchTab(targetId) {
+                navBtns.forEach(btn => {
+                    if (btn.dataset.target === targetId) {
+                        btn.classList.add('bg-gray-900', 'text-white', 'shadow-lg');
+                        btn.classList.remove('bg-white', 'text-gray-700');
+                    } else {
+                        btn.classList.remove('bg-gray-900', 'text-white', 'shadow-lg');
+                        btn.classList.add('bg-white', 'text-gray-700');
+                    }
+                });
+
+                sections.forEach(sec => {
+                    if (sec.id === targetId) sec.classList.add('active');
+                    else sec.classList.remove('active');
+                });
+                
+                // Hentikan simulasi jika pindah tab
+                if (targetId !== 'simulasi') pauseSim();
+                // Resize canvas jika tab fisika dibuka
+                if (targetId === 'fisika') initCanvas();
+            }
+
+            navBtns.forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn.dataset.target));
+            });
+
+            document.querySelector('.btn-goto-anatomi').addEventListener('click', () => switchTab('anatomi'));
+
+            // ==========================================
+            // 2. LOGIKA DATA ANATOMI
+            // ==========================================
+            const earData = [
+                { name: 'Daun Telinga', fungsi: 'Menangkap gelombang suara dari lingkungan dan menyalurkannya ke dalam liang telinga.' },
+                { name: 'Liang Telinga', fungsi: 'Saluran yang membawa gelombang suara menuju gendang telinga.' },
+                { name: 'Gendang Telinga (Timpani)', fungsi: 'Membran tipis yang bergetar saat terkena gelombang suara, mengubah energi akustik menjadi mekanik.' },
+                { name: 'Tulang Pendengaran', fungsi: 'Martil, Landasan, Sanggurdi. Berfungsi memperkuat dan meneruskan getaran.' },
+                { name: 'Koklea (Rumah Siput)', fungsi: 'Berisi cairan dan sel rambut sensorik yang merespons getaran dan mengubahnya menjadi sinyal listrik.' },
+                { name: 'Saraf Pendengaran', fungsi: 'Membawa sinyal listrik dari koklea ke otak (korteks auditori) untuk diolah.' }
+            ];
+
+            const hotspots = document.querySelectorAll('.hotspot');
+            const anatomiInfo = document.getElementById('anatomi-info');
+
+            hotspots.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Reset styling semua hotspot
+                    hotspots.forEach(b => {
+                        b.classList.remove('bg-pink-500', 'scale-125');
+                        b.classList.add('bg-blue-500');
+                    });
+                    
+                    // Highlight yang diklik
+                    e.target.classList.remove('bg-blue-500');
+                    e.target.classList.add('bg-pink-500', 'scale-125');
+                    
+                    const id = e.target.dataset.id;
+                    const data = earData[id];
+                    
+                    // Render isi informasi
+                    anatomiInfo.classList.remove('bg-pink-100', 'bg-blue-100');
+                    anatomiInfo.classList.add('bg-pink-100');
+                    anatomiInfo.innerHTML = `
+                        <h3 class="text-3xl font-black text-gray-900 mb-4 border-b-4 border-gray-900 pb-4">${data.name}</h3>
+                        <p class="text-gray-800 font-medium text-lg leading-relaxed">${data.fungsi}</p>
+                    `;
+                });
+            });
+
+            // ==========================================
+            // 3. LOGIKA SIMULASI & WEB AUDIO API
+            // ==========================================
+            const simStages = [
+                { title: '1. Gelombang Masuk', bio: 'Daun telinga menangkap bunyi.', fisika: 'Suara merambat sebagai gelombang longitudinal.' },
+                { title: '2. Gendang Bergetar', bio: 'Membran timpani mulai bergetar.', fisika: 'Perubahan tekanan diubah menjadi getaran (energi mekanik).' },
+                { title: '3. Tulang Bergerak', bio: 'Tulang meneruskan getaran.', fisika: 'Prinsip tuas pada tulang memperkuat tekanan getaran.' },
+                { title: '4. Koklea Merespons', bio: 'Cairan di dalam koklea bergetar merangsang sel sensorik.', fisika: 'Gelombang menjalar dalam medium cair.' },
+                { title: '5. Sinyal Listrik', bio: 'Sinyal diteruskan melalui saraf.', fisika: 'Transduksi: energi mekanik menjadi impuls listrik.' },
+                { title: '6. Otak Mengolah', bio: 'Otak menerjemahkan sinyal menjadi suara.', fisika: 'Pola frekuensi diproses menjadi persepsi bunyi.' }
+            ];
+
+            let currentStep = 0;
+            let isPlaying = false;
+            let simTimer;
+            let audioCtx = null;
+
+            // Inisialisasi DOM Simulasi
+            const stepsContainer = document.getElementById('sim-steps-container');
+            const simBadge = document.getElementById('sim-badge');
+            const simProgress = document.getElementById('sim-progress');
+            const descBio = document.getElementById('desc-bio');
+            const descFisika = document.getElementById('desc-fisika');
+            
+            const btnPlay = document.getElementById('btn-play');
+            const iconPlay = document.getElementById('icon-play');
+            const iconPause = document.getElementById('icon-pause');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+
+            // Render list sidebar simulasi
+            simStages.forEach((stage, idx) => {
+                const div = document.createElement('div');
+                div.className = `sim-step-item cursor-pointer p-4 rounded-xl border-4 font-bold transition-all ${idx === 0 ? 'bg-blue-100 border-gray-900 shadow-[4px_4px_0_0_#1f2937]' : 'bg-white border-gray-200'}`;
+                div.innerText = stage.title;
+                div.addEventListener('click', () => {
+                    pauseSim();
+                    goToStep(idx);
+                });
+                stepsContainer.appendChild(div);
+            });
+            const stepItems = document.querySelectorAll('.sim-step-item');
+
+            function playSound(step) {
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                switch(step) {
+                    case 0: // Angin low freq
+                        osc.type = 'sine'; osc.frequency.setValueAtTime(150, now);
+                        gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.5, now + 0.1); gain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+                        osc.start(now); osc.stop(now + 1); break;
+                    case 1: // Drum timpani
+                        osc.type = 'triangle'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+                        gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                        osc.start(now); osc.stop(now + 0.3); break;
+                    case 2: // Ketukan mekanik
+                        osc.type = 'square'; osc.frequency.setValueAtTime(400, now);
+                        gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.3, now + 0.05); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                        osc.start(now); osc.stop(now + 0.3); break;
+                    case 3: // Resonansi
+                        osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.5);
+                        gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.4, now + 0.2); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                        osc.start(now); osc.stop(now + 0.8); break;
+                    case 4: // Zap Saraf
+                        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(1500, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                        gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                        osc.start(now); osc.stop(now + 0.2); break;
+                    case 5: // Chord
+                        [440, 550, 660].forEach(f => {
+                            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                            o.connect(g); g.connect(audioCtx.destination);
+                            o.type = 'sine'; o.frequency.value = f;
+                            g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.2, now + 0.5); g.gain.exponentialRampToValueAtTime(0.01, now + 2);
+                            o.start(now); o.stop(now + 2);
+                        });
+                        break;
+                }
+            }
+
+            function goToStep(index) {
+                currentStep = index;
+                
+                // Update Sidebar
+                stepItems.forEach((el, i) => {
+                    if (i === currentStep) {
+                        el.classList.add('bg-blue-100', 'border-gray-900', 'shadow-[4px_4px_0_0_#1f2937]');
+                        el.classList.remove('bg-white', 'border-gray-200');
+                    } else {
+                        el.classList.remove('bg-blue-100', 'border-gray-900', 'shadow-[4px_4px_0_0_#1f2937]');
+                        el.classList.add('bg-white', 'border-gray-200');
+                    }
+                });
+
+                // Update UI Teks & Progress
+                simBadge.innerText = `Tahap ${currentStep + 1}: ${simStages[currentStep].title}`;
+                descBio.innerText = simStages[currentStep].bio;
+                descFisika.innerText = simStages[currentStep].fisika;
+                simProgress.style.width = `${((currentStep + 1) / simStages.length) * 100}%`;
+                
+                // Kontrol Tombol
+                btnPrev.disabled = currentStep === 0;
+                btnNext.disabled = currentStep === simStages.length - 1;
+
+                // Update SVG Animasi Group (Layering)
+                for(let i=0; i<6; i++) {
+                    const layer = document.getElementById(`layer-${i}`);
+                    if(i === currentStep) {
+                        layer.classList.remove('opacity-0');
+                        layer.classList.add('opacity-100');
+                    } else {
+                        layer.classList.remove('opacity-100');
+                        layer.classList.add('opacity-0');
+                    }
+                }
+
+                // Bunyikan SFX
+                playSound(currentStep);
+            }
+
+            function playSim() {
+                if(currentStep >= simStages.length - 1) currentStep = -1; // Reset to start
+                isPlaying = true;
+                iconPlay.classList.add('hidden');
+                iconPause.classList.remove('hidden');
+                
+                // Jalankan step pertama langsung
+                goToStep(currentStep + 1);
+                
+                simTimer = setInterval(() => {
+                    if (currentStep < simStages.length - 1) {
+                        goToStep(currentStep + 1);
+                    } else {
+                        pauseSim();
+                    }
+                }, 3500); // ganti tiap 3.5 detik
+            }
+
+            function pauseSim() {
+                isPlaying = false;
+                iconPlay.classList.remove('hidden');
+                iconPause.classList.add('hidden');
+                clearInterval(simTimer);
+            }
+
+            btnPlay.addEventListener('click', () => isPlaying ? pauseSim() : playSim());
+            btnPrev.addEventListener('click', () => { pauseSim(); if(currentStep > 0) goToStep(currentStep - 1); });
+            btnNext.addEventListener('click', () => { pauseSim(); if(currentStep < simStages.length - 1) goToStep(currentStep + 1); });
+
+            // Initialize first step
+            goToStep(0);
+
+
+            // ==========================================
+            // 4. LOGIKA LAB FISIKA (CANVAS)
+            // ==========================================
+            const canvas = document.getElementById('waveCanvas');
+            const ctx = canvas.getContext('2d');
+            const sliderFreq = document.getElementById('slider-freq');
+            const sliderAmp = document.getElementById('slider-amp');
+            const valFreq = document.getElementById('val-freq');
+            const valAmp = document.getElementById('val-amp');
+
+            let timeOffset = 0;
+            let animationFrameId;
+
+            function initCanvas() {
+                // Set ukuran canvas agar tidak buram
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                if(!animationFrameId) drawWave();
+            }
+
+            function drawWave() {
+                const freq = parseFloat(sliderFreq.value);
+                const amp = parseFloat(sliderAmp.value);
+                
+                // Update teks label
+                valFreq.innerText = `${freq} Hz`;
+                valAmp.innerText = amp;
+
+                // Bersihkan canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Gambar garis tengah
+                const centerY = canvas.height / 2;
+                ctx.beginPath();
+                ctx.moveTo(0, centerY);
+                ctx.lineTo(canvas.width, centerY);
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Gambar Gelombang Sinus
+                ctx.beginPath();
+                for(let x = 0; x < canvas.width; x++) {
+                    // Y = Amplitude * sin(2π * frequency * x / width + phase)
+                    // Scale frequensi agar terlihat proporsional di layar
+                    const y = centerY - amp * Math.sin((x * freq * 0.05) + timeOffset);
+                    if(x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+
+                ctx.strokeStyle = "#3b82f6"; // Blue-500
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Animasi jalan terus
+                timeOffset -= 0.1; // Kecepatan gerak ombak
+                animationFrameId = requestAnimationFrame(drawWave);
+            }
+
+            window.addEventListener('resize', () => {
+                if(document.getElementById('fisika').classList.contains('active')) {
+                    initCanvas();
+                }
+            });
+
+
+            // ==========================================
+            // 5. LOGIKA KUIS
+            // ==========================================
+            const kuisData = [
+                {
+                    q: "Bagian telinga mana yang berfungsi mengubah gelombang suara menjadi getaran mekanis?",
+                    opt: ["Daun Telinga", "Gendang Telinga", "Koklea", "Saraf Pendengaran"],
+                    ans: 1,
+                    exp: "Gendang telinga (membran timpani) menerima tekanan suara dan bergetar, mengubah energi akustik menjadi mekanik."
+                },
+                {
+                    q: "Apa fungsi utama dari tulang pendengaran?",
+                    opt: ["Menangkap suara", "Menjaga keseimbangan", "Memperkuat getaran", "Menerjemahkan suara"],
+                    ans: 2,
+                    exp: "Tulang pendengaran (martil, landasan, sanggurdi) memperkuat tekanan getaran sebelum masuk ke koklea."
+                },
+                {
+                    q: "Di mana proses perubahan getaran menjadi sinyal listrik terjadi?",
+                    opt: ["Liang Telinga", "Gendang Telinga", "Tulang", "Koklea"],
+                    ans: 3,
+                    exp: "Di dalam koklea, getaran cairan merangsang sel rambut yang mengubah energi mekanik menjadi listrik."
+                },
+                {
+                    q: "Menurut Fisika, apa yang menentukan tinggi rendahnya (pitch) sebuah nada?",
+                    opt: ["Amplitudo", "Kecepatan Rambat", "Frekuensi", "Intensitas"],
+                    ans: 2,
+                    exp: "Frekuensi (jumlah siklus per detik) menentukan pitch. Frekuensi tinggi menghasilkan nada tinggi."
+                },
+                {
+                    q: "Jika sebuah bunyi bertambah keras, parameter fisika apa yang membesar?",
+                    opt: ["Frekuensi", "Amplitudo", "Panjang Gelombang", "Periode"],
+                    ans: 1,
+                    exp: "Amplitudo (simpangan gelombang) berbanding lurus dengan keras atau lemahnya sebuah energi bunyi."
+                }
+            ];
+
+            let currQ = 0;
+            let score = 0;
+            let answered = false;
+
+            const qText = document.getElementById('question-text');
+            const optContainer = document.getElementById('options-container');
+            const fbox = document.getElementById('feedback-box');
+            const ftext = document.getElementById('feedback-text');
+            const btnNextQ = document.getElementById('btn-next-q');
+            
+            const kuisProgressArea = document.getElementById('kuis-progress-container');
+            const kuisArea = document.getElementById('kuis-area');
+            const kuisResultArea = document.getElementById('kuis-result');
+            const finalScoreTxt = document.getElementById('final-score');
+            const kuisBar = document.getElementById('kuis-bar');
+            const kuisStatus = document.getElementById('kuis-status');
+
+            function loadQuestion() {
+                answered = false;
+                fbox.classList.add('hidden');
+                
+                const q = kuisData[currQ];
+                qText.innerText = q.q;
+                
+                kuisBar.style.width = `${(currQ / kuisData.length) * 100}%`;
+                kuisStatus.innerText = `Pertanyaan ${currQ + 1} dari ${kuisData.length}`;
+
+                optContainer.innerHTML = "";
+                q.opt.forEach((optStr, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "text-left p-4 rounded-xl border-4 border-gray-200 font-bold bg-white text-gray-700 hover:border-gray-900 transition-all text-lg";
+                    btn.innerText = optStr;
+                    btn.addEventListener('click', () => handleAnswer(idx, btn));
+                    optContainer.appendChild(btn);
+                });
+            }
+
+            function handleAnswer(idx, btn) {
+                if (answered) return;
+                answered = true;
+                
+                const isCorrect = (idx === kuisData[currQ].ans);
+                if (isCorrect) score++;
+
+                // Styling buttons
+                Array.from(optContainer.children).forEach((b, i) => {
+                    b.disabled = true;
+                    if(i === kuisData[currQ].ans) {
+                        b.classList.remove('bg-white', 'border-gray-200');
+                        b.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                    } else if (i === idx && !isCorrect) {
+                        b.classList.remove('bg-white', 'border-gray-200');
+                        b.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                    } else {
+                        b.classList.add('opacity-50');
+                    }
+                });
+
+                // Tampilkan Feedback
+                ftext.innerText = kuisData[currQ].exp;
+                fbox.classList.remove('hidden');
+                
+                btnNextQ.innerText = (currQ === kuisData.length - 1) ? 'Lihat Hasil Akhir' : 'Pertanyaan Selanjutnya';
+            }
+
+            btnNextQ.addEventListener('click', () => {
+                if(currQ < kuisData.length - 1) {
+                    currQ++;
+                    loadQuestion();
+                } else {
+                    // Selesai
+                    kuisArea.classList.add('hidden');
+                    kuisProgressArea.classList.add('hidden');
+                    kuisResultArea.classList.remove('hidden');
+                    finalScoreTxt.innerText = score;
+                    document.getElementById('result-icon').innerText = score >= 4 ? '🏆' : (score >= 2 ? '⭐' : '💪');
+                }
+            });
+
+            document.getElementById('btn-restart-q').addEventListener('click', () => {
+                currQ = 0;
+                score = 0;
+                kuisArea.classList.remove('hidden');
+                kuisProgressArea.classList.remove('hidden');
+                kuisResultArea.classList.add('hidden');
+                loadQuestion();
+            });
+
+            // Init Kuis
+            loadQuestion();
+
+        });
+    </script>
+</body>
+</html>
